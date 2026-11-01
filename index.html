@@ -1,0 +1,1350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Student Assignment Management System</title>
+  
+  <!-- Progressive Web App (PWA) & Mobile Meta -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#1e3a8a" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="SAMS Portal" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg" />
+
+  <!-- CSS Stylesheets -->
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/responsive.css" />
+
+  <!-- Firebase App & Services (Official Google CDN Compat) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+</head>
+<body>
+
+  <!-- Offline Status Toast Notification -->
+  <div id="offlineIndicator" class="offline-banner" style="display: none;">
+    <span class="offline-dot"></span>
+    <span><strong>Offline Mode</strong>: Running from cached app shell. Local changes are saved on this phone.</span>
+  </div>
+
+  <!-- PWA Install Prompt Banner -->
+  <div id="pwaInstallBanner" class="pwa-install-banner" style="display: none;">
+    <div class="pwa-install-info">
+      <img src="icons/icon-192.png" alt="SAMS App Icon" class="pwa-banner-icon" />
+      <div>
+        <strong class="pwa-banner-title">Install SAMS Mobile App</strong>
+        <p class="pwa-banner-desc">Add to home screen for fullscreen mobile experience & fast offline access</p>
+      </div>
+    </div>
+    <div class="pwa-install-actions">
+      <button type="button" class="btn btn-sm btn-primary" onclick="App.installPWA()">Install</button>
+      <button type="button" class="pwa-dismiss-btn" onclick="App.dismissPWAInstall()" aria-label="Dismiss banner">&times;</button>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       PAGE 1: WELCOME / LANDING PAGE WITH ANIMATED PRIMARY TABS
+       ======================================================================== -->
+  <div id="pageWelcome" class="page-view">
+    <!-- Welcome Header -->
+    <header class="navbar">
+      <div class="nav-container">
+        <div class="brand" onclick="App.navigateTo('#welcome')">
+          <div class="brand-icon">📚</div>
+          <div>
+            <span class="brand-title">AssignmentHub</span>
+            <span class="brand-subtitle">Academic Timetable Portal</span>
+          </div>
+        </div>
+        <div class="nav-actions">
+          <button type="button" class="firebase-status-badge" onclick="App.openFirebaseModal()" id="welcomeFirebaseBadge" title="Firebase Status & Configuration">
+            ⚡ Demo Mode
+          </button>
+          <button id="pwaWelcomeInstallBtn" class="btn btn-outline btn-sm pwa-nav-btn" onclick="App.installPWA()" style="display: none;">
+            📲 Install App
+          </button>
+          <button class="btn btn-secondary btn-sm" onclick="App.navigateTo('#student-login')">
+            🎓 Student Login
+          </button>
+          <button class="btn btn-primary btn-sm" onclick="App.navigateTo('#faculty-login')">
+            👩‍🏫 Faculty Login
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Welcome Hero -->
+    <section class="welcome-hero">
+      <div class="institutional-badge">
+        🏛️ Academic Curriculum & Assignment System
+      </div>
+      <h1 class="welcome-title">Student Assignment Management System</h1>
+      <p class="welcome-subtitle">
+        A unified platform for students and faculty. Track your 12 curriculum course subjects, submit assignments on time, and manage evaluations with full transparency.
+      </p>
+
+      <!-- ====================================================================
+           UNIQUE INTERACTIVE ANIMATED TAB SWITCHER (STUDENT & FACULTY)
+           ==================================================================== -->
+      <div class="segmented-tab-wrapper">
+        <div 
+          class="segmented-tab-container" 
+          role="tablist" 
+          aria-label="Student and Faculty Portal Switcher"
+          id="primaryRoleTablist"
+        >
+          <!-- Liquid Sliding Pill Indicator -->
+          <div class="tab-slider-pill" id="primaryTabPill"></div>
+
+          <!-- Student Tab -->
+          <button 
+            type="button" 
+            class="role-nav-tab active" 
+            id="primaryTabStudent" 
+            role="tab" 
+            aria-selected="true" 
+            aria-controls="portalStudentPanel" 
+            tabindex="0"
+          >
+            🎓 Student
+          </button>
+
+          <!-- Faculty Tab -->
+          <button 
+            type="button" 
+            class="role-nav-tab" 
+            id="primaryTabFaculty" 
+            role="tab" 
+            aria-selected="false" 
+            aria-controls="portalFacultyPanel" 
+            tabindex="-1"
+          >
+            👩‍🏫 Faculty
+          </button>
+        </div>
+      </div>
+
+      <!-- Animated Portal Panels Container -->
+      <div id="portalPanelsContainer" class="portal-panels-wrapper">
+        <!-- Panel 1: Student Portal -->
+        <div 
+          class="portal-card portal-panel tab-panel-visible tab-panel-active" 
+          id="portalStudentPanel" 
+          role="tabpanel" 
+          aria-labelledby="primaryTabStudent"
+        >
+          <div>
+            <div class="portal-icon-box">🎓</div>
+            <span class="portal-role-tag">Learner Access</span>
+            <h2 class="portal-heading">Student Portal</h2>
+            <p class="portal-desc">
+              Access coursework assigned specifically to you, filter by subject or faculty, upload completed assignment files, and review faculty feedback and grades.
+            </p>
+            <ul class="portal-features-list">
+              <li>✔️ Personal assignment dashboard with deadlines</li>
+              <li>✔️ Search & filter by Subject or Faculty</li>
+              <li>✔️ Upload completed files & track status (Pending, Submitted, Reviewed, Late)</li>
+              <li>✔️ Dedicated page for Faculty Feedback & Marks</li>
+            </ul>
+          </div>
+          <button class="btn btn-primary btn-block" onclick="App.navigateTo('#student-login')">
+            Enter Student Login →
+          </button>
+        </div>
+
+        <!-- Panel 2: Faculty Portal -->
+        <div 
+          class="portal-card faculty-card portal-panel" 
+          id="portalFacultyPanel" 
+          role="tabpanel" 
+          aria-labelledby="primaryTabFaculty"
+        >
+          <div>
+            <div class="portal-icon-box">👩‍🏫</div>
+            <span class="portal-role-tag">Instructor Access</span>
+            <h2 class="portal-heading">Faculty Portal</h2>
+            <p class="portal-desc">
+              Log in to create coursework across the 12 course subjects, assign work to students, review submissions, and enter marks.
+            </p>
+            <ul class="portal-features-list">
+              <li>✔️ Publish coursework with rubrics & attachments</li>
+              <li>✔️ Review submissions, Mark Completed & Add Feedback</li>
+              <li>✔️ Student Submissions Directory with marks breakdown</li>
+            </ul>
+          </div>
+          <button class="btn btn-primary btn-block" style="background: var(--accent);" onclick="App.navigateTo('#faculty-login')">
+            Enter Faculty Login →
+          </button>
+        </div>
+      </div>
+
+      <!-- Institutional Highlights -->
+      <div class="welcome-highlights">
+        <div>
+          <div class="highlight-item-number" id="welcomeSubjectCount">12</div>
+          <div class="highlight-item-label">Course Subjects</div>
+        </div>
+        <div>
+          <div class="highlight-item-number">7</div>
+          <div class="highlight-item-label">Academic Activities</div>
+        </div>
+        <div>
+          <div class="highlight-item-number" id="welcomeStudentCount">0</div>
+          <div class="highlight-item-label">Enrolled Students</div>
+        </div>
+        <div>
+          <div class="highlight-item-number">Firebase</div>
+          <div class="highlight-item-label">Ready (Auth & Firestore)</div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ========================================================================
+       PAGE 2: STUDENT LOGIN PAGE
+       ======================================================================== -->
+  <div id="pageStudentLogin" class="page-view" style="display: none;">
+    <header class="navbar">
+      <div class="nav-container">
+        <div class="brand" onclick="App.navigateTo('#welcome')">
+          <div class="brand-icon">📚</div>
+          <div>
+            <span class="brand-title">AssignmentHub</span>
+            <span class="brand-subtitle">Student Authentication</span>
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="App.navigateTo('#welcome')">
+          ← Back to Welcome
+        </button>
+      </div>
+    </header>
+
+    <div class="auth-page-wrapper">
+      <div class="auth-card">
+        <span class="btn-back-link" onclick="App.navigateTo('#welcome')">
+          ← Return to Portal Selection
+        </span>
+
+        <div class="auth-header">
+          <div class="auth-icon">🎓</div>
+          <h2 class="auth-title">Student Portal Login</h2>
+          <p class="auth-subtitle">Select your student account to enter your protected dashboard</p>
+        </div>
+
+        <div class="demo-credentials-banner" style="background: #f8fafc; border: 1px solid var(--border); color: var(--text-main);">
+          💡 <strong>Student Access:</strong> Select your registered student profile and enter your passcode, or register a new student account below.
+        </div>
+
+        <form id="studentLoginForm" novalidate>
+          <!-- Inline Error Banner -->
+          <div id="studentLoginError" class="auth-error-banner" style="display: none;"></div>
+
+          <div class="form-group" style="margin-bottom: 1.25rem;">
+            <label class="form-label" for="loginStudentSelect">Select Student Profile *</label>
+            <select id="loginStudentSelect" class="form-control" required>
+              <option value="" disabled selected>No student accounts registered yet</option>
+            </select>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 1.25rem;">
+            <label class="form-label">Assigned Roll Number</label>
+            <input type="text" id="loginStudentRoll" class="form-control" readonly style="background: var(--bg-main); color: var(--secondary);" placeholder="Auto-filled on selection" />
+          </div>
+
+          <div class="form-group" style="margin-bottom: 1.5rem;">
+            <label class="form-label" for="studentPasswordInput">Student Passcode *</label>
+            <div class="password-input-wrapper">
+              <input 
+                type="password" 
+                id="studentPasswordInput" 
+                class="form-control" 
+                placeholder="Enter your student passcode" 
+                autocomplete="current-password"
+                required 
+              />
+              <button type="button" class="btn-toggle-password" id="toggleStudentPassword" title="Show/Hide Passcode">
+                👁️
+              </button>
+            </div>
+            <div class="form-hint" style="margin-top: 0.4rem;">
+              Enter your student account passcode or roll number.
+            </div>
+          </div>
+
+          <button type="submit" id="studentLoginSubmitBtn" class="btn btn-primary btn-block">
+            Enter Student Dashboard →
+          </button>
+
+          <!-- Toggle Register Student -->
+          <div style="margin-top: 1.25rem; text-align: center; border-top: 1px solid var(--border); padding-top: 1rem;">
+            <button type="button" class="btn btn-secondary btn-sm" id="btnToggleRegisterStudent" onclick="App.toggleStudentRegisterForm()">
+              ➕ Register New Student Account
+            </button>
+          </div>
+        </form>
+
+        <!-- New Student Registration Form (Hidden by default) -->
+        <form id="studentRegisterForm" novalidate style="display: none;">
+          <div id="studentRegisterError" class="auth-error-banner" style="display: none;"></div>
+          
+          <div class="form-group" style="margin-bottom: 1rem;">
+            <label class="form-label" for="regStudentName">Full Student Name *</label>
+            <input type="text" id="regStudentName" class="form-control" placeholder="e.g. Shyam Daniel" required />
+          </div>
+
+          <div class="form-group" style="margin-bottom: 1rem;">
+            <label class="form-label" for="regStudentRoll">Roll Number / Student ID *</label>
+            <input type="text" id="regStudentRoll" class="form-control" placeholder="e.g. 2026-ENG-001" required />
+          </div>
+
+          <div class="form-group" style="margin-bottom: 1rem;">
+            <label class="form-label" for="regStudentEmail">Email Address</label>
+            <input type="email" id="regStudentEmail" class="form-control" placeholder="e.g. student@univ.edu" />
+          </div>
+
+          <div class="form-group" style="margin-bottom: 1.5rem;">
+            <label class="form-label" for="regStudentPasscode">Create Passcode *</label>
+            <input type="password" id="regStudentPasscode" class="form-control" placeholder="Minimum 4 characters" required />
+          </div>
+
+          <div style="display: flex; gap: 0.75rem;">
+            <button type="button" class="btn btn-secondary btn-block" onclick="App.toggleStudentRegisterForm(false)">
+              Cancel
+            </button>
+            <button type="submit" id="regStudentSubmitBtn" class="btn btn-primary btn-block">
+              Create & Sign In →
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       PAGE 3: FACULTY LOGIN PAGE
+       ======================================================================== -->
+  <div id="pageFacultyLogin" class="page-view" style="display: none;">
+    <header class="navbar">
+      <div class="nav-container">
+        <div class="brand" onclick="App.navigateTo('#welcome')">
+          <div class="brand-icon">📚</div>
+          <div>
+            <span class="brand-title">AssignmentHub</span>
+            <span class="brand-subtitle">Faculty Authentication</span>
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="App.navigateTo('#welcome')">
+          ← Back to Welcome
+        </button>
+      </div>
+    </header>
+
+    <div class="auth-page-wrapper">
+      <div class="auth-card">
+        <span class="btn-back-link" onclick="App.navigateTo('#welcome')">
+          ← Return to Portal Selection
+        </span>
+
+        <div class="auth-header">
+          <div class="auth-icon" style="background: var(--accent-light); color: var(--accent);">👩‍🏫</div>
+          <h2 class="auth-title">Faculty Portal Login</h2>
+          <p class="auth-subtitle">Instructor access for course and submission management</p>
+        </div>
+
+        <div class="demo-credentials-banner" style="background: #f8fafc; border: 1px solid var(--border); color: var(--text-main);">
+          💡 <strong>Faculty Access:</strong> Sign in with your institutional faculty credentials or enter your instructor details below.
+        </div>
+
+        <form id="facultyLoginForm" novalidate>
+          <!-- Inline Error Banner -->
+          <div id="facultyLoginError" class="auth-error-banner" style="display: none;"></div>
+
+          <div class="form-group" style="margin-bottom: 1rem;">
+            <label class="form-label" for="facultyNameInput">Faculty Name / Title</label>
+            <input type="text" id="facultyNameInput" class="form-control" placeholder="e.g. Dr. Jane Smith" />
+          </div>
+
+          <div class="form-group" style="margin-bottom: 1rem;">
+            <label class="form-label" for="facultyDepartmentInput">Department</label>
+            <input type="text" id="facultyDepartmentInput" class="form-control" value="Department of Engineering & Technology" />
+          </div>
+
+          <div class="form-group" style="margin-bottom: 1.25rem;">
+            <label class="form-label" for="facultyEmailInput">Institutional Email *</label>
+            <input 
+              type="email" 
+              id="facultyEmailInput" 
+              class="form-control" 
+              placeholder="e.g. professor@university.edu"
+              required 
+            />
+          </div>
+
+          <div class="form-group" style="margin-bottom: 1.5rem;">
+            <label class="form-label" for="facultyPasswordInput">Faculty Access Key / Password *</label>
+            <div class="password-input-wrapper">
+              <input 
+                type="password" 
+                id="facultyPasswordInput" 
+                class="form-control" 
+                placeholder="Enter faculty access key" 
+                autocomplete="current-password"
+                required 
+              />
+              <button type="button" class="btn-toggle-password" id="toggleFacultyPassword" title="Show/Hide Access Key">
+                👁️
+              </button>
+            </div>
+            <div class="form-hint" style="margin-top: 0.4rem;">
+              Enter your secure faculty access key or institutional password.
+            </div>
+          </div>
+
+          <button type="submit" id="facultyLoginSubmitBtn" class="btn btn-primary btn-block" style="background: var(--accent);">
+            Enter Faculty Dashboard →
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       PAGE 4: PROTECTED DASHBOARD WRAPPER
+       ======================================================================== -->
+  <div id="pageApp" class="page-view" style="display: none;">
+    <!-- Application Navbar with Dynamic User Profile & Logout -->
+    <header class="navbar">
+      <div class="nav-container">
+        <!-- Brand -->
+        <div class="brand">
+          <div class="brand-icon">📚</div>
+          <div>
+            <span class="brand-title">AssignmentHub</span>
+            <span class="brand-subtitle" id="navSubtitle">Academic Portal</span>
+          </div>
+        </div>
+
+        <!-- Right Side: User Profile, Role Badge, and Logout -->
+        <div class="nav-actions">
+          <div class="user-profile-badge">
+            <div class="avatar" id="currentUserAvatar">👤</div>
+            <div>
+              <span class="user-name" id="currentUserName">User</span>
+              <small id="currentUserRole" style="display: block; font-size: 0.72rem; color: var(--text-muted);"></small>
+            </div>
+          </div>
+
+          <!-- Firebase Status Badge -->
+          <button type="button" class="firebase-status-badge" onclick="App.openFirebaseModal()" id="dashboardFirebaseBadge" title="Firebase Status & Configuration">
+            ⚡ Local Mode
+          </button>
+
+          <!-- Prominent Logout Button -->
+          <button id="pwaAppInstallBtn" class="btn btn-outline btn-sm pwa-nav-btn" onclick="App.installPWA()" style="display: none;">
+            📲 Install
+          </button>
+          <button id="logoutBtn" class="btn-logout" title="Sign out and return to the Welcome page">
+            🚪 Logout
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Navigation Tabs Bar -->
+    <nav class="view-tabs-bar">
+      <div class="tabs-container">
+        <button class="tab-btn active" data-tab="assignmentsTab" id="tabLinkAssignments">
+          <span>📋 Coursework</span>
+          <span class="tab-badge" id="tabAssignmentsBadge">0</span>
+        </button>
+        <button class="tab-btn" data-tab="feedbackTab" id="tabLinkFeedback">
+          <span>⭐ Feedback & Marks</span>
+          <span class="tab-badge" id="tabFeedbackBadge">0</span>
+        </button>
+        <!-- Faculty-only Submissions & Evaluations Tab -->
+        <button class="tab-btn" data-tab="evaluationsTab" id="tabLinkEvaluations" style="display: none;">
+          <span>📊 Student Submissions & Evaluations</span>
+          <span class="tab-badge" id="tabEvaluationsBadge">0</span>
+        </button>
+        <button class="tab-btn" data-tab="subjectsTab" id="tabLinkSubjects">
+          <span>📚 Subjects & Activities</span>
+          <span class="tab-badge" id="tabSubjectsBadge">12</span>
+        </button>
+        <button class="tab-btn" data-tab="directoryTab" id="tabLinkDirectory">
+          <span>👥 Student Directory</span>
+          <span class="tab-badge" id="tabDirectoryBadge">0</span>
+        </button>
+      </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="main-wrapper">
+      <!-- Route Guard Warning / Error Banner (visible when an unauthorized cross-role URL was attempted) -->
+      <div id="routeGuardAlert" class="route-guard-alert" style="display: none;">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <span style="font-size: 1.5rem;">⛔</span>
+          <div class="alert-text">
+            <strong id="routeGuardAlertTitle" style="display: block; font-size: 0.95rem; margin-bottom: 0.15rem;">Access Denied</strong>
+            <span id="routeGuardAlertMessage">You do not have permission to view the requested page.</span>
+          </div>
+        </div>
+        <button type="button" class="alert-close-btn" onclick="App.hideRouteGuardBanner()" title="Dismiss message">
+          &times;
+        </button>
+      </div>
+
+      <!-- Dynamic Welcome Banner -->
+      <section class="dashboard-banner">
+        <div>
+          <h1 id="bannerTitle">Dashboard</h1>
+          <p id="bannerSubtitle">Manage and view your academic assignments.</p>
+        </div>
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+          <button id="scannerBtn" class="btn btn-secondary" onclick="App.openScannerModal()" style="display: none; background: white; color: var(--text-main); border: 1px solid #cbd5e1;">
+            📷 Document Scanner
+          </button>
+          <button id="createAssignmentBtn" class="btn btn-primary" onclick="App.openCreateAssignmentModal()">
+            ➕ Create Assignment
+          </button>
+        </div>
+      </section>
+
+      <!-- ==================================================================
+           TAB 1: ASSIGNMENTS DASHBOARD
+           ================================================================== -->
+      <div id="viewAssignments" class="tab-view-content">
+        <!-- Key Statistics Grid -->
+        <section class="stats-grid" id="statsGrid">
+          <!-- Injected dynamically via App.renderStats() -->
+        </section>
+
+        <!-- Search and Filter Controls -->
+        <section class="controls-bar">
+          <div class="search-filter-group">
+            <input 
+              type="text" 
+              id="searchInput" 
+              class="search-input" 
+              placeholder="🔍 Search by assignment, subject, or faculty..." 
+              aria-label="Search assignments"
+            />
+
+            <!-- Filter by Subject -->
+            <select id="courseFilter" class="filter-select" aria-label="Filter by Subject">
+              <option value="all">All Subjects</option>
+            </select>
+
+            <!-- Filter by Faculty -->
+            <select id="facultyFilter" class="filter-select" aria-label="Filter by Faculty">
+              <option value="all">All Faculty</option>
+            </select>
+
+            <!-- Filter by Status -->
+            <select id="statusFilter" class="filter-select" aria-label="Filter by Status">
+              <option value="all">All Statuses</option>
+              <option value="Pending">⏳ Pending</option>
+              <option value="Submitted">📬 Submitted</option>
+              <option value="Reviewed">✅ Reviewed</option>
+              <option value="Late">⚠️ Late</option>
+            </select>
+          </div>
+        </section>
+
+        <!-- Assignments Card Grid -->
+        <section class="assignments-grid" id="assignmentsContainer">
+          <!-- Injected dynamically via App.renderCards() -->
+        </section>
+      </div>
+
+      <!-- ==================================================================
+           TAB 2: DEDICATED FACULTY FEEDBACK & MARKS PAGE (STUDENT VIEW)
+           ================================================================== -->
+      <div id="viewFeedback" class="tab-view-content" style="display: none;">
+        <!-- Academic Scorecard Summary -->
+        <section class="feedback-summary-grid" id="feedbackSummaryGrid">
+          <!-- Dynamically populated via App.renderFeedbackPage() -->
+        </section>
+
+        <div class="section-heading-row">
+          <div>
+            <h2 class="section-heading">📝 Faculty Evaluations & Feedback Remarks</h2>
+            <p style="font-size: 0.88rem; color: var(--text-muted);">
+              Detailed scores, marks breakdown, and instructor feedback provided by faculty.
+            </p>
+          </div>
+        </div>
+
+        <!-- Feedback & Marks Cards Container -->
+        <div class="feedback-cards-container" id="feedbackCardsContainer" style="margin-top: 1.25rem;">
+          <!-- Dynamically populated via App.renderFeedbackPage() -->
+        </div>
+      </div>
+
+      <!-- ==================================================================
+           TAB 3: FACULTY SUBMISSIONS & EVALUATIONS PAGE (FACULTY VIEW)
+           ================================================================== -->
+      <div id="viewFacultyEvaluations" class="tab-view-content" style="display: none;">
+        <div class="evaluations-toolbar">
+          <div>
+            <h2 class="section-heading">📊 Student Submissions & Evaluations</h2>
+            <p style="font-size: 0.88rem; color: var(--text-muted);">
+              Manage student work: review submitted files, mark assignments as completed, and provide marks and feedback.
+            </p>
+          </div>
+          <div>
+            <button class="btn btn-primary" onclick="App.openCreateAssignmentModal()">
+              📤 Upload / Create Assignment
+            </button>
+          </div>
+        </div>
+
+        <!-- Submissions Evaluation Table -->
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Student Name & Roll No.</th>
+                <th>Assigned Assignment & Subject</th>
+                <th>Submission Status</th>
+                <th>Uploaded File</th>
+                <th>Marks</th>
+                <th>Faculty Feedback</th>
+                <th style="text-align: right;">Evaluation Actions</th>
+              </tr>
+            </thead>
+            <tbody id="evaluationsTableBody">
+              <!-- Dynamically populated via App.renderEvaluationsPage() -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ==================================================================
+           TAB 4: SUBJECTS & OTHER ACADEMIC ACTIVITIES
+           ================================================================== -->
+      <div id="viewSubjects" class="tab-view-content" style="display: none;">
+        <!-- Automatic Subject Counter Banner -->
+        <div class="subjects-counter-banner">
+          <div>
+            <div style="font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--primary); margin-bottom: 0.25rem;">
+              Academic Curriculum Summary
+            </div>
+            <h2 style="font-size: 1.35rem; color: var(--text-main); font-weight: 700; margin-bottom: 0.25rem;">
+              Course Subjects & Academic Sessions
+            </h2>
+            <p style="font-size: 0.88rem; color: var(--text-muted);">
+              Course subjects are officially counted towards credit requirements. Other academic activities (placement, library, mentoring) are non-credit sessions tracked separately.
+            </p>
+          </div>
+          <div class="counter-value-box">
+            <div class="counter-number" id="autoSubjectCounter">12</div>
+            <div style="font-size: 0.9rem; font-weight: 700; color: var(--secondary); line-height: 1.2;">
+              Course<br />Subjects
+            </div>
+          </div>
+        </div>
+
+        <!-- 12 Course Subjects Section -->
+        <div class="section-heading-row">
+          <h3 class="section-heading">
+            📖 Course Subjects (<span id="subjectListCount">12</span>)
+          </h3>
+          <span style="font-size: 0.85rem; color: var(--text-muted);">Core curriculum & electives</span>
+        </div>
+        <div class="subjects-grid" id="courseSubjectsGrid">
+          <!-- Injected dynamically via App.renderSubjects() -->
+        </div>
+
+        <!-- Other Academic Activities Section (7 items) -->
+        <div class="section-heading-row" style="margin-top: 2rem;">
+          <h3 class="section-heading">
+            🏛️ Other Academic Activities (7)
+          </h3>
+          <span class="non-credit-pill">Non-Credit Academic Sessions</span>
+        </div>
+        <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+          These institutional activities support co-curricular growth, career training, and guidance, and are not counted as regular academic course subjects.
+        </p>
+        <div class="activities-grid" id="activitiesGrid">
+          <!-- Injected dynamically via App.renderActivities() -->
+        </div>
+      </div>
+
+      <!-- ==================================================================
+           TAB 5: STUDENT DIRECTORY
+           ================================================================== -->
+      <div id="viewDirectory" class="tab-view-content" style="display: none;">
+        <div class="section-heading-row">
+          <div>
+            <h2 class="section-heading">👥 Student Academic Directory</h2>
+            <p style="font-size: 0.88rem; color: var(--text-muted);">
+              Comprehensive record of all enrolled students, their assigned subjects, assignment numbers, submission statuses, marks, and faculty member.
+            </p>
+          </div>
+        </div>
+
+        <!-- Directory Search & Filter -->
+        <div class="controls-bar" style="margin-top: 1rem;">
+          <div class="search-filter-group">
+            <input 
+              type="text" 
+              id="directorySearchInput" 
+              class="search-input" 
+              placeholder="🔍 Search by student name, roll number, or subject..." 
+              aria-label="Search student directory"
+            />
+            <select id="directoryStatusFilter" class="filter-select" aria-label="Filter Directory by Status">
+              <option value="all">All Statuses</option>
+              <option value="Pending">Pending</option>
+              <option value="Submitted">Submitted</option>
+              <option value="Reviewed">Reviewed</option>
+              <option value="Late">Late</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Directory Table -->
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Student Details</th>
+                <th>Assigned Subject</th>
+                <th>Assignment No. & Title</th>
+                <th>Status</th>
+                <th>Marks</th>
+                <th>Faculty Name</th>
+              </tr>
+            </thead>
+            <tbody id="directoryTableBody">
+              <!-- Injected dynamically via App.renderDirectory() -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+
+    <!-- Mobile Sticky Bottom Navigation (Touch-Friendly Quick Access) -->
+    <nav class="mobile-bottom-nav" id="mobileBottomNav" aria-label="Mobile Navigation">
+      <button type="button" class="mobile-nav-item active" data-tab="assignmentsTab" onclick="App.switchDashboardTab('assignmentsTab')">
+        <span class="mobile-nav-icon">📋</span>
+        <span class="mobile-nav-label">Coursework</span>
+      </button>
+      <button type="button" class="mobile-nav-item" id="mobileNavFeedback" data-tab="feedbackTab" onclick="App.switchDashboardTab('feedbackTab')">
+        <span class="mobile-nav-icon">⭐</span>
+        <span class="mobile-nav-label">Marks</span>
+      </button>
+      <button type="button" class="mobile-nav-item" id="mobileNavEvaluations" data-tab="evaluationsTab" onclick="App.switchDashboardTab('evaluationsTab')" style="display: none;">
+        <span class="mobile-nav-icon">📊</span>
+        <span class="mobile-nav-label">Reviews</span>
+      </button>
+      <button type="button" class="mobile-nav-item" data-tab="subjectsTab" onclick="App.switchDashboardTab('subjectsTab')">
+        <span class="mobile-nav-icon">📚</span>
+        <span class="mobile-nav-label">Subjects</span>
+      </button>
+      <button type="button" class="mobile-nav-item" data-tab="directoryTab" onclick="App.switchDashboardTab('directoryTab')">
+        <span class="mobile-nav-icon">👥</span>
+        <span class="mobile-nav-label">Directory</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- ========================================================================
+       MODAL 1: CREATE / UPLOAD ASSIGNMENT (FACULTY ROLE)
+       ======================================================================== -->
+  <div class="modal-overlay" id="assignmentModal" role="dialog" aria-modal="true" aria-labelledby="asgModalTitle">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h2 class="modal-title" id="asgModalTitle">➕ Create & Upload Coursework</h2>
+        <button type="button" class="modal-close-btn" onclick="UI.closeModal('assignmentModal')" aria-label="Close">✕</button>
+      </div>
+      <form id="assignmentForm">
+        <div class="modal-body">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <!-- Assignment Number -->
+            <div class="form-group">
+              <label class="form-label" for="formAssignmentNumber">Assignment Number *</label>
+              <input 
+                type="text" 
+                id="formAssignmentNumber" 
+                class="form-control" 
+                placeholder="e.g. Assignment 1, Lab Task 2" 
+                value="Assignment 1"
+                required 
+              />
+            </div>
+
+            <!-- Faculty Name -->
+            <div class="form-group">
+              <label class="form-label" for="formFacultyName">Faculty Name *</label>
+              <input 
+                type="text" 
+                id="formFacultyName" 
+                class="form-control" 
+                placeholder="e.g. Prof. Smith" 
+                required 
+              />
+            </div>
+          </div>
+
+          <!-- Assignment Title -->
+          <div class="form-group">
+            <label class="form-label" for="formTitle">Assignment Title *</label>
+            <input 
+              type="text" 
+              id="formTitle" 
+              class="form-control" 
+              placeholder="e.g., Design of Spur Gear Shaft" 
+              required 
+            />
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <!-- Subject Dropdown -->
+            <div class="form-group">
+              <label class="form-label" for="formSubjectId">Subject *</label>
+              <select id="formSubjectId" class="form-control" required>
+                <!-- Populated dynamically with the 12 course subjects -->
+              </select>
+            </div>
+
+            <!-- Assigned Student Dropdown -->
+            <div class="form-group">
+              <label class="form-label" for="formAssignedStudent">Assigned Student *</label>
+              <select id="formAssignedStudent" class="form-control" required>
+                <!-- Populated dynamically -->
+              </select>
+            </div>
+          </div>
+
+          <!-- Instructions -->
+          <div class="form-group">
+            <label class="form-label" for="formInstructions">Instructions & Rubric *</label>
+            <textarea 
+              id="formInstructions" 
+              class="form-control" 
+              rows="3" 
+              placeholder="State the problem statement, guidelines, formatting requirements..." 
+              required
+            ></textarea>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <!-- Due Date -->
+            <div class="form-group">
+              <label class="form-label" for="formDueDate">Due Date & Time *</label>
+              <input type="datetime-local" id="formDueDate" class="form-control" required />
+            </div>
+
+            <!-- Maximum Marks -->
+            <div class="form-group">
+              <label class="form-label" for="formMaxMarks">Maximum Marks *</label>
+              <input type="number" id="formMaxMarks" class="form-control" min="10" max="500" value="100" required />
+            </div>
+          </div>
+
+          <!-- Assignment File Upload Attachment -->
+          <div class="form-group">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+              <label class="form-label" for="formAssignmentFile" style="margin-bottom: 0;">Upload Assignment Attachment / Resource Brief (PDF, DOCX)</label>
+              <button type="button" class="btn btn-sm btn-secondary" onclick="App.openScannerModal('assignmentForm')" style="font-size: 0.78rem; padding: 0.25rem 0.65rem;">
+                📷 Scan Document
+              </button>
+            </div>
+            <input type="file" id="formAssignmentFile" class="form-control" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" />
+            <div id="scannedAttachmentBadge" style="display: none; margin-top: 0.5rem;" class="scanned-badge">
+              <span>📎 Scanned Document Attached: <strong id="scannedAttachmentName"></strong></span>
+              <button type="button" style="background:none;border:none;cursor:pointer;color:var(--status-late);font-weight:bold;margin-left:0.5rem;" onclick="App.removeScannedAttachment()">&times;</button>
+            </div>
+            <span class="form-hint">Upload problem sheet, schematics, or scan physical course material.</span>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="UI.closeModal('assignmentModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Publish & Upload Assignment</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL 2: REVIEW SUBMISSION DETAILS MODAL
+       ======================================================================== -->
+  <div class="modal-overlay" id="submissionsModal" role="dialog" aria-modal="true" aria-labelledby="submissionsModalTitle">
+    <div class="modal-container" style="max-width: 700px;">
+      <div class="modal-header">
+        <h2 class="modal-title" id="submissionsModalTitle">Student Submissions</h2>
+        <button type="button" class="modal-close-btn" onclick="UI.closeModal('submissionsModal')" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body" id="submissionsListContainer">
+        <!-- Submissions rendered dynamically -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="UI.closeModal('submissionsModal')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL 3: GRADING & FEEDBACK MODAL (ADD FEEDBACK & MARKS)
+       ======================================================================== -->
+  <div class="modal-overlay" id="gradeModal" role="dialog" aria-modal="true" aria-labelledby="gradeModalTitle">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h2 class="modal-title" id="gradeModalTitle">⭐ Add Marks & Faculty Feedback</h2>
+        <button type="button" class="modal-close-btn" onclick="UI.closeModal('gradeModal')" aria-label="Close">✕</button>
+      </div>
+      <form id="gradeForm">
+        <input type="hidden" id="gradeSubmissionId" />
+        <div class="modal-body">
+          <div style="background: var(--bg-main); padding: 0.85rem 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+            <div style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.2rem;">Student:</div>
+            <div id="gradeStudentInfo" style="font-weight: 700; margin-bottom: 0.4rem;"></div>
+            <div style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.2rem;">Assignment & Subject:</div>
+            <div id="gradeAssignmentInfo" style="font-size: 0.9rem;"></div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <!-- Marks Input -->
+            <div class="form-group">
+              <label class="form-label" for="gradeInput">Marks Awarded *</label>
+              <input type="number" id="gradeInput" class="form-control" min="0" placeholder="e.g. 92" required />
+            </div>
+
+            <!-- Submission Status Dropdown -->
+            <div class="form-group">
+              <label class="form-label" for="gradeStatusSelect">Update Submission Status *</label>
+              <select id="gradeStatusSelect" class="form-control" required>
+                <option value="Reviewed">✅ Reviewed (Completed)</option>
+                <option value="Submitted">📬 Submitted (Under Review)</option>
+                <option value="Late">⚠️ Late Submission</option>
+                <option value="Pending">⏳ Pending Correction</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Faculty Feedback -->
+          <div class="form-group">
+            <label class="form-label" for="feedbackInput">Instructor Written Feedback & Rubric Notes</label>
+            <textarea 
+              id="feedbackInput" 
+              class="form-control" 
+              rows="3" 
+              placeholder="Provide constructive feedback, praise, or areas for improvement..."
+            ></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="UI.closeModal('gradeModal')">Back</button>
+          <button type="submit" class="btn btn-primary">Save Evaluation & Feedback</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL 4: STUDENT SUBMISSION MODAL (UPLOAD COMPLETED ASSIGNMENT)
+       ======================================================================== -->
+  <div class="modal-overlay" id="submitModal" role="dialog" aria-modal="true" aria-labelledby="submitModalTitle">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h2 class="modal-title" id="submitModalTitle">📤 Submit Completed Assignment</h2>
+        <button type="button" class="modal-close-btn" onclick="UI.closeModal('submitModal')" aria-label="Close">✕</button>
+      </div>
+      <form id="submissionForm">
+        <input type="hidden" id="submitAssignmentId" />
+        <div class="modal-body">
+          <div style="background: var(--primary-light); padding: 0.85rem 1rem; border-radius: var(--radius-sm); border: 1px solid #bfdbfe; margin-bottom: 0.5rem;">
+            <div style="font-size: 0.8rem; font-weight: 700; color: var(--primary);" id="submitAsgSubjectLabel"></div>
+            <div style="font-weight: 700; font-size: 1rem; color: var(--text-main);" id="submitAsgTitleLabel"></div>
+            <div style="font-size: 0.82rem; color: var(--secondary); margin-top: 0.25rem;">
+              <span>Faculty: <strong id="submitAsgFacultyLabel"></strong></span> | 
+              <span>Deadline: <strong id="submitAsgDeadlineLabel"></strong></span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="submitContent">Solution Notes / Description / Explanation *</label>
+            <textarea 
+              id="submitContent" 
+              class="form-control" 
+              rows="4" 
+              placeholder="Provide your solution approach, derivation steps, or GitHub repo URL..." 
+              required
+            ></textarea>
+            <span class="form-hint">Explain key assumptions and how you solved the problem.</span>
+          </div>
+
+          <div class="form-group">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem; flex-wrap: wrap; gap: 0.5rem;">
+              <label class="form-label" for="submitFile" style="margin-bottom: 0;">Completed Assignment Document / Photo *</label>
+              <button 
+                type="button" 
+                class="btn btn-sm btn-secondary" 
+                onclick="document.getElementById('submitCameraInput').click()" 
+                style="font-size: 0.8rem; padding: 0.3rem 0.75rem; display: inline-flex; align-items: center; gap: 0.35rem;"
+                title="Directly capture handwritten pages or printed sheets using your mobile camera"
+              >
+                📸 Mobile Camera Snap
+              </button>
+              <input 
+                type="file" 
+                id="submitCameraInput" 
+                accept="image/*" 
+                capture="environment" 
+                style="display: none;" 
+                onchange="App.handleStudentCameraSnap(event)" 
+              />
+            </div>
+            <input type="file" id="submitFile" class="form-control" />
+            <div id="submitAttachmentBadge" class="attachment-preview-badge" style="display: none;">
+              <span id="submitAttachmentIcon">📎</span>
+              <span id="submitAttachmentName" style="font-weight: 600; font-size: 0.85rem;"></span>
+              <button type="button" class="attachment-remove-btn" onclick="App.clearStudentAttachment()" aria-label="Remove attachment">&times;</button>
+            </div>
+            <span class="form-hint">Accepted file formats: PDF, DOCX, ZIP, or photos (JPG/PNG) of handwritten work.</span>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="UI.closeModal('submitModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Turn In Assignment</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL 5: STUDENT VIEW SUBMISSION & FACULTY FEEDBACK
+       ======================================================================== -->
+  <div class="modal-overlay" id="viewSubmissionModal" role="dialog" aria-modal="true" aria-labelledby="viewSubHeader">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h2 class="modal-title" id="viewSubHeader">📄 My Submission Details</h2>
+        <button type="button" class="modal-close-btn" onclick="UI.closeModal('viewSubmissionModal')" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+          <div>
+            <h3 id="viewSubTitle" style="font-size: 1.15rem; font-weight: 700;"></h3>
+            <span id="viewSubSubject" style="font-size: 0.82rem; color: var(--secondary);"></span>
+          </div>
+          <div id="viewSubStatusBadge"></div>
+        </div>
+
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+          Submitted: <strong id="viewSubDate"></strong>
+        </p>
+
+        <div class="form-group">
+          <label class="form-label">Submitted Work / Summary:</label>
+          <div id="viewSubContent" style="background: var(--bg-main); padding: 0.85rem; border-radius: var(--radius-sm); border: 1px solid var(--border); font-size: 0.9rem; white-space: pre-wrap;"></div>
+        </div>
+
+        <div class="form-group" style="margin-top: 0.75rem;">
+          <label class="form-label">Attached File:</label>
+          <div style="font-size: 0.85rem; color: var(--text-muted);">
+            📎 <strong id="viewSubFile"></strong>
+          </div>
+        </div>
+
+        <!-- Grade & Faculty Feedback Section -->
+        <div id="viewSubFeedbackSection" style="display: none; margin-top: 1.25rem; background: var(--status-reviewed-bg); border: 1px solid #a7f3d0; border-radius: var(--radius-md); padding: 1rem;">
+          <div style="font-weight: 700; color: #065f46; margin-bottom: 0.4rem; display: flex; align-items: center; justify-content: space-between;">
+            <span>⭐ Faculty Evaluation</span>
+            <span id="viewSubMarks" style="font-size: 1rem; color: #047857;"></span>
+          </div>
+          <div style="font-size: 0.85rem; color: #065f46;">
+            <strong>Feedback:</strong>
+            <p id="viewSubFeedback" style="margin-top: 0.25rem; font-style: italic;"></p>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="UI.closeModal('viewSubmissionModal')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL 6: FACULTY DOCUMENT SCANNER (PDF/IMAGE UPLOAD & CAMERA SCANNING)
+       ======================================================================== -->
+  <div class="modal-overlay" id="scannerModal" role="dialog" aria-modal="true" aria-labelledby="scannerModalTitle">
+    <div class="modal-container" style="max-width: 680px;">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 0.6rem;">
+          <span style="font-size: 1.4rem;">📷</span>
+          <div>
+            <h2 class="modal-title" id="scannerModalTitle">Faculty Document Scanner</h2>
+            <small style="color: var(--text-muted); font-size: 0.78rem;">Upload PDF / images or scan paper coursework with your camera</small>
+          </div>
+        </div>
+        <button type="button" class="modal-close-btn" onclick="App.closeScannerModal()" aria-label="Close">✕</button>
+      </div>
+
+      <div class="modal-body" style="padding: 1.25rem 1.5rem;">
+        <!-- Scanner Mode Switcher (Upload vs Camera) -->
+        <div class="scanner-mode-tabs" role="tablist">
+          <button 
+            type="button" 
+            class="scanner-mode-btn active" 
+            id="scannerTabBtnUpload" 
+            onclick="App.switchScannerMode('upload')"
+          >
+            📁 Document Upload (PDF & Images)
+          </button>
+          <button 
+            type="button" 
+            class="scanner-mode-btn" 
+            id="scannerTabBtnCamera" 
+            onclick="App.switchScannerMode('camera')"
+          >
+            📷 Live Camera Scanner
+          </button>
+        </div>
+
+        <!-- ==============================================================
+             SECTION A: FILE / PDF UPLOAD DROPZONE
+             ============================================================== -->
+        <div id="scannerUploadSection" class="scanner-section active">
+          <div 
+            class="scanner-dropzone" 
+            id="scannerDropzone"
+            onclick="document.getElementById('scannerFileInput').click()"
+          >
+            <div class="scanner-dropzone-icon">📄 🖼️</div>
+            <h3 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 0.35rem; color: var(--text-main);">
+              Drag & Drop PDF or Image Document
+            </h3>
+            <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 1rem;">
+              Supports <strong>PDF</strong>, <strong>PNG</strong>, <strong>JPG/JPEG</strong>, <strong>WEBP</strong> (Max 25MB)
+            </p>
+            <button type="button" class="btn btn-secondary btn-sm" style="pointer-events: none;">
+              📂 Browse Local Files
+            </button>
+            <input 
+              type="file" 
+              id="scannerFileInput" 
+              accept=".pdf,image/png,image/jpeg,image/webp,image/jpg" 
+              style="display: none;" 
+            />
+          </div>
+        </div>
+
+        <!-- ==============================================================
+             SECTION B: LIVE CAMERA SCANNING
+             ============================================================== -->
+        <div id="scannerCameraSection" class="scanner-section" style="display: none;">
+          <!-- Browser Permissions Notice Box -->
+          <div class="scanner-permission-box" id="scannerPermissionNotice">
+            <div style="display: flex; gap: 0.75rem;">
+              <span style="font-size: 1.25rem;">🔒</span>
+              <div style="font-size: 0.82rem; line-height: 1.45; color: #1e3a8a;">
+                <strong>Browser Permission Required:</strong>
+                Camera scanning requires camera access approval. When prompted by your browser, click <strong>"Allow"</strong>.
+                Scanning processes live video frames locally within your browser using HTML5 Canvas.
+              </div>
+            </div>
+          </div>
+
+          <!-- Camera Unsupported or Denied Alert -->
+          <div id="scannerCameraErrorAlert" class="auth-error-banner" style="display: none; margin-bottom: 1rem;"></div>
+
+          <!-- Camera Viewfinder View -->
+          <div class="scanner-viewfinder-wrapper" id="scannerViewfinderWrapper">
+            <!-- Framing Guides (Document alignment outline) -->
+            <div class="scanner-viewfinder-overlay">
+              <div class="scanner-guide-corners top-left"></div>
+              <div class="scanner-guide-corners top-right"></div>
+              <div class="scanner-guide-corners bottom-left"></div>
+              <div class="scanner-guide-corners bottom-right"></div>
+              <span class="scanner-guide-label">Align document inside frame</span>
+            </div>
+
+            <!-- Video Element -->
+            <video id="scannerVideo" autoplay playsinline muted></video>
+
+            <!-- Status Pill Overlay -->
+            <div class="scanner-stream-status" id="scannerStreamStatus">
+              <span class="status-dot"></span> <span id="scannerStatusText">Camera Off</span>
+            </div>
+          </div>
+
+          <!-- Hidden Canvas for frame snapshot capture -->
+          <canvas id="scannerCanvas" style="display: none;"></canvas>
+
+          <!-- Camera Action Toolbar -->
+          <div class="scanner-camera-actions">
+            <button 
+              type="button" 
+              class="btn btn-secondary btn-sm" 
+              id="scannerToggleCameraBtn"
+              onclick="App.toggleScannerCamera()"
+            >
+              ▶️ Start Camera
+            </button>
+
+            <button 
+              type="button" 
+              class="btn btn-primary" 
+              id="scannerCaptureBtn" 
+              onclick="App.captureScannerPage()"
+              disabled
+              style="padding: 0.65rem 1.75rem; font-weight: 700;"
+            >
+              📸 Capture Page
+            </button>
+
+            <button 
+              type="button" 
+              class="btn btn-secondary btn-sm" 
+              id="scannerSwitchLensBtn"
+              onclick="App.switchScannerCamera()"
+              style="display: none;"
+            >
+              🔄 Switch Lens
+            </button>
+          </div>
+        </div>
+
+        <!-- ==============================================================
+             SECTION C: SCANNED / UPLOADED DOCUMENT RESULT PREVIEW
+             ============================================================== -->
+        <div id="scannedDocumentCard" class="scanned-result-card" style="display: none;">
+          <div class="scanned-result-header">
+            <div style="display: flex; align-items: center; gap: 0.6rem;">
+              <span id="scannedFileTypeIcon" style="font-size: 1.5rem;">📄</span>
+              <div>
+                <strong id="scannedFileName" style="display: block; font-size: 0.92rem; color: var(--text-main);"></strong>
+                <small id="scannedFileMeta" style="color: var(--text-muted); font-size: 0.78rem;"></small>
+              </div>
+            </div>
+            <span class="badge badge-reviewed" id="scannedSuccessBadge">✅ Ready</span>
+          </div>
+
+          <!-- Visual preview for captured image / PDF summary -->
+          <div class="scanned-thumbnail-container" id="scannedThumbnailContainer">
+            <img id="scannedImagePreview" src="" alt="Scanned Document" style="display: none;" />
+            <div id="scannedPdfPlaceholder" style="display: none; padding: 1.5rem; text-align: center;">
+              <span style="font-size: 2.5rem; display: block; margin-bottom: 0.5rem;">📑</span>
+              <span style="font-size: 0.85rem; color: var(--text-muted);">PDF Document Loaded & Validated</span>
+            </div>
+          </div>
+
+          <!-- Scanned Action Buttons -->
+          <div class="scanned-action-row">
+            <button type="button" class="btn btn-primary btn-sm" onclick="App.attachScannedDocumentToAssignment()">
+              📋 Attach to New Assignment
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="App.downloadScannedDocument()">
+              💾 Download Scanned Copy
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="App.resetScannedDocument()">
+              🔄 Scan Another
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="App.closeScannerModal()">Done / Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL 7: FIREBASE CLOUD SYNC & CREDENTIALS SETUP
+       ======================================================================== -->
+  <div class="modal-overlay" id="firebaseModal" role="dialog" aria-modal="true" aria-labelledby="firebaseModalTitle">
+    <div class="modal-container" style="max-width: 620px;">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 0.65rem;">
+          <span style="font-size: 1.4rem;">🔥</span>
+          <div>
+            <h2 class="modal-title" id="firebaseModalTitle">Firebase Cloud Setup & Sync</h2>
+            <small style="color: var(--text-muted); font-size: 0.78rem;">Authentication, Firestore & Cloud Storage for Multi-Device Sync</small>
+          </div>
+        </div>
+        <button type="button" class="modal-close-btn" onclick="UI.closeModal('firebaseModal')" aria-label="Close">✕</button>
+      </div>
+
+      <div class="modal-body" style="padding: 1.25rem 1.5rem;">
+        <!-- Status Indicator Card -->
+        <div id="firebaseStatusCard" class="firebase-status-card">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 0.35rem;">
+                <span id="firebaseStatusIndicator" class="firebase-indicator-dot"></span>
+                <strong id="firebaseStatusTitle" style="font-size: 1rem;">Checking Firebase Status...</strong>
+              </div>
+              <p id="firebaseStatusDetails" style="font-size: 0.82rem; margin: 0.35rem 0 0; color: var(--text-muted);"></p>
+            </div>
+            <span id="firebaseStatusPill" class="badge"></span>
+          </div>
+        </div>
+
+        <!-- 3 Pillars of Firebase in SAMS -->
+        <div style="margin: 1.25rem 0;">
+          <h4 style="font-size: 0.88rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem;">Connected Firebase Cloud Stack:</h4>
+          <div style="display: grid; grid-template-columns: 1fr; gap: 0.65rem; font-size: 0.82rem;">
+            <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 0.65rem 0.85rem;">
+              <strong>🔐 Firebase Authentication:</strong> Separate student and faculty logins with protected sessions across all phones.
+            </div>
+            <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 0.65rem 0.85rem;">
+              <strong>🗄️ Cloud Firestore:</strong> Real-time cross-device sync for 12 curriculum subjects, assignments, student submissions, marks, and feedback.
+            </div>
+            <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 0.65rem 0.85rem;">
+              <strong>☁️ Firebase Storage:</strong> Cloud storage for assignment briefs, student homework docs, and phone camera photos.
+            </div>
+          </div>
+        </div>
+
+        <!-- Paste / Update Firebase Config Form -->
+        <form id="firebaseConfigForm">
+          <h4 style="font-size: 0.88rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem;">Configure Firebase Project:</h4>
+          <div class="form-group" style="margin-bottom: 0.65rem;">
+            <label class="form-label" for="cfgApiKey">Web API Key *</label>
+            <input type="text" id="cfgApiKey" class="form-control" placeholder="AIzaSy..." required />
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+            <div class="form-group" style="margin-bottom: 0.65rem;">
+              <label class="form-label" for="cfgProjectId">Project ID *</label>
+              <input type="text" id="cfgProjectId" class="form-control" placeholder="academic-assignment-portal" required />
+            </div>
+            <div class="form-group" style="margin-bottom: 0.65rem;">
+              <label class="form-label" for="cfgStorageBucket">Storage Bucket</label>
+              <input type="text" id="cfgStorageBucket" class="form-control" placeholder="your-project.appspot.com" />
+            </div>
+          </div>
+          <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 0.85rem; flex-wrap: wrap;">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="App.resetFirebaseToLocal()">Reset to Local Mode</button>
+            <button type="submit" class="btn btn-primary btn-sm">Save & Connect Firebase</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="modal-footer" style="background: #f8fafc; border-top: 1px solid var(--border); justify-content: space-between;">
+        <small style="color: var(--text-muted); font-size: 0.78rem;">Configuration can also be edited in <code>js/firebase-config.js</code>.</small>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="UI.closeModal('firebaseModal')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- JavaScript Modules in Execution Sequence -->
+  <script src="js/firebase-config.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,89 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions to check user roles
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isFaculty() {
+      return isAuthenticated() && (
+        request.auth.token.role == 'faculty' ||
+        getUserData().role == 'faculty'
+      );
+    }
+
+    function isStudent() {
+      return isAuthenticated() && (
+        request.auth.token.role == 'student' ||
+        getUserData().role == 'student'
+      );
+    }
+
+    function isOwner(studentId) {
+      return isAuthenticated() && request.auth.uid == studentId;
+    }
+
+    // --------------------------------------------------------------------------
+    // Users Collection
+    // --------------------------------------------------------------------------
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isFaculty() || request.auth.uid == userId;
+    }
+
+    // --------------------------------------------------------------------------
+    // Subjects & Academic Activities
+    // --------------------------------------------------------------------------
+    match /subjects/{subjectId} {
+      allow read: if isAuthenticated();
+      allow write: if isFaculty(); // Only faculty can add/edit course subjects
+    }
+
+    match /activities/{activityId} {
+      allow read: if isAuthenticated();
+      allow write: if isFaculty();
+    }
+
+    // --------------------------------------------------------------------------
+    // Assignments Collection
+    // --------------------------------------------------------------------------
+    match /assignments/{assignmentId} {
+      allow read: if isAuthenticated();
+      // Only Faculty can create, edit, or delete coursework assignments
+      allow create, update, delete: if isFaculty();
+    }
+
+    // --------------------------------------------------------------------------
+    // Submissions Collection
+    // --------------------------------------------------------------------------
+    match /submissions/{submissionId} {
+      // Faculty can view all submissions; students can only view their own
+      allow read: if isFaculty() || (isStudent() && resource.data.studentId == request.auth.uid);
+
+      // Students can create their own submission, but cannot award themselves marks
+      allow create: if isStudent() &&
+        request.resource.data.studentId == request.auth.uid &&
+        request.resource.data.grade == null &&
+        request.resource.data.facultyFeedback == "";
+
+      // Students can update their submitted content/file BEFORE grading; cannot edit marks or feedback
+      allow update: if isStudent() &&
+        resource.data.studentId == request.auth.uid &&
+        request.resource.data.studentId == request.auth.uid &&
+        request.resource.data.grade == resource.data.grade &&
+        request.resource.data.facultyFeedback == resource.data.facultyFeedback;
+
+      // Only Faculty can grade, add feedback, and update review statuses
+      allow update: if isFaculty();
+
+      // Only Faculty can delete submissions if necessary
+      allow delete: if isFaculty();
+    }
+  }
+}

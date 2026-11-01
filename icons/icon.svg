@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e3a8a" />
+      <stop offset="50%" stop-color="#1e40af" />
+      <stop offset="100%" stop-color="#2563eb" />
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b" />
+      <stop offset="100%" stop-color="#fbbf24" />
+    </linearGradient>
+    <filter id="dropShadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.3" />
+    </filter>
+  </defs>
+
+  <!-- Background Base (Full for maskable, rounded for standard) -->
+  <rect width="512" height="512" fill="url(#bgGrad)" />
+
+  <!-- Inner Soft Ring -->
+  <circle cx="256" cy="256" r="230" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="6" />
+
+  <!-- Center Artwork within safe-zone (radius ~180) -->
+  <g filter="url(#dropShadow)">
+    <!-- Mortarboard Cap Top Diamond -->
+    <path d="M 256 120 L 416 195 L 256 270 L 96 195 Z" fill="#ffffff" />
+    
+    <!-- Skullcap Base -->
+    <path d="M 160 225 L 160 295 C 160 345, 352 345, 352 295 L 352 225 C 320 240, 192 240, 160 225 Z" fill="#e2e8f0" />
+
+    <!-- Golden Tassel Cord & Ornament -->
+    <path d="M 256 195 Q 380 215, 395 270 L 405 350 L 385 350 L 395 270" fill="none" stroke="url(#goldGrad)" stroke-width="7" stroke-linecap="round" />
+    <circle cx="256" cy="195" r="9" fill="url(#goldGrad)" />
+    <!-- Tassel Brush -->
+    <polygon points="380,345 410,345 402,385 388,385" fill="url(#goldGrad)" />
+
+    <!-- Assignment Document Badge in Center-Bottom -->
+    <rect x="186" y="320" width="140" height="90" rx="14" fill="#ffffff" />
+    <rect x="206" y="342" width="70" height="8" rx="4" fill="#3b82f6" />
+    <rect x="206" y="360" width="100" height="8" rx="4" fill="#94a3b8" />
+    <rect x="206" y="378" width="50" height="8" rx="4" fill="#94a3b8" />
+    <circle cx="305" cy="350" r="14" fill="#10b981" />
+    <path d="M 299 350 L 303 354 L 311 346" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+  </g>
+</svg>

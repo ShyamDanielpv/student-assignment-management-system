@@ -1,0 +1,10 @@
+node_modules/
+backups/
+dist/
+.env
+.env.*
+*.log
+*.pem
+*.key
+*adminsdk*.json
+serviceAccount*.json

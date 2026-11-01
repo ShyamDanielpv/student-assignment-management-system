@@ -1,0 +1,25 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Faculty assignments folder
+    match /assignments/{assignmentId}/{fileName} {
+      allow read: if isAuthenticated();
+      // Only faculty can upload assignment files (max 25MB)
+      allow write: if isAuthenticated() && request.resource.size < 25 * 1024 * 1024;
+    }
+
+    // Student completed assignments folder
+    match /submissions/{userId}/{submissionId}/{fileName} {
+      // Students can only upload to their own user directory; faculty can read all
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && 
+        request.auth.uid == userId &&
+        request.resource.size < 25 * 1024 * 1024; // Max 25MB file size
+    }
+  }
+}
